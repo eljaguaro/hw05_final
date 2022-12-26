@@ -34,6 +34,7 @@ class PostModelTest(TestCase):
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
+        cache.clear()
         shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
 
     def setUp(self):

@@ -82,7 +82,7 @@ def post_detail(request, post_id):
     post = Post.objects.select_related('author', 'group').filter(pk=post_id)[0]
     comments = Comment.objects.filter(post=post_id)
     author = User.objects.filter(username=post.author)[0]
-    num_of_posts = author.posts.select_related('author', 'group').all().count()
+    num_of_posts = author.posts.all().count()
     title = post.text[:30]
     if request.user == author:
         is_author = True
@@ -151,15 +151,12 @@ def add_comment(request, post_id):
 
 @login_required
 def follow_index(request):
-    # информация о текущем пользователе доступна в переменной request.user
-    follows_list = Follow.objects.select_related(
+    ''' информация о текущем пользователе доступна в request.user '''
+    followslst = Follow.objects.select_related(
         'user', 'author').filter(user=request.user)
-    post_list = []
-    for i in follows_list:
-        for q in Post.objects.filter(author=i.author):
-            post_list.append(q)
-    post_list.sort(key=lambda x: x.pub_date, reverse=1)
-    paginator = Paginator(post_list, settings.TEN_SLICE)
+    posts_list = Post.objects.filter(author__in=[i.author for i in followslst])
+    list(posts_list).sort(key=lambda x: x.pub_date, reverse=1)
+    paginator = Paginator(posts_list, settings.TEN_SLICE)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     context = {
@@ -172,8 +169,10 @@ def follow_index(request):
 @login_required
 def profile_follow(request, username):
     author = User.objects.filter(username=username).first()
-    if request.user.username != username and not Follow.objects.filter(
-            user=request.user, author=author).count():
+    follower_name = request.user.username
+    follows = Follow.objects.filter(
+        user=request.user, author=author).count()
+    if follower_name != username and not follows:
         Follow.objects.create(user=request.user, author=author)
     return profile(request, username)
 

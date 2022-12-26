@@ -51,7 +51,10 @@ class TaskURLTests(TestCase):
             '/profile/david/': HTTPStatus.OK,
             '/posts/1/edit/': HTTPStatus.FOUND,
             '/posts/1/': HTTPStatus.OK,
-            '/create/': HTTPStatus.FOUND
+            '/create/': HTTPStatus.FOUND,
+            '/follow/': HTTPStatus.FOUND,
+            '/profile/david/follow/': HTTPStatus.FOUND,
+            '/profile/david/unfollow/': HTTPStatus.FOUND
         }
 
         for address, status in guest_adresses.items():
@@ -67,6 +70,9 @@ class TaskURLTests(TestCase):
             '/posts/1/edit/': HTTPStatus.OK,
             '/posts/1/': HTTPStatus.OK,
             '/create/': HTTPStatus.OK,
+            '/follow/': HTTPStatus.OK,
+            '/profile/david/follow/': HTTPStatus.OK,
+            '/profile/david/unfollow/': HTTPStatus.OK
         }
 
         for address, status in authzed_adresses.items():

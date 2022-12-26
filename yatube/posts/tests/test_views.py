@@ -1,4 +1,8 @@
-from django.test import Client, TestCase
+import shutil
+import tempfile
+
+from django.test import Client, TestCase, override_settings
+from django.conf import settings
 from django import forms
 from django.urls import reverse
 from ..models import Group, Post, User, Follow
@@ -9,7 +13,10 @@ POSTSNUM_PAGE1 = 10
 POSTSNUM_PAGE2_1 = 3
 POSTSNUM_PAGE_EMT = 0
 
+TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
+
+@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
 class PostModelTest(TestCase):
     @classmethod
     def setUpClass(cls):
@@ -41,6 +48,12 @@ class PostModelTest(TestCase):
             )
         )
 
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        cache.clear()
+        shutil.rmtree(TEMP_MEDIA_ROOT, ignore_errors=True)
+
     def setUp(self):
         """ Создаем авторизованный клиент """
         self.guest_client = Client()
@@ -50,6 +63,9 @@ class PostModelTest(TestCase):
         self.authorized_client2.force_login(self.user2)
         self.authorized_client3 = Client()
         self.authorized_client3.force_login(self.user3)
+        self.authorized_client.get(reverse('posts:profile_follow', kwargs={
+            'username':
+                self.user2.username}))
         cache.clear()
 
     def post_test(self, post):
@@ -112,7 +128,7 @@ class PostModelTest(TestCase):
     def test_index_cache(self):
         response = self.guest_client.get(reverse('posts:index'))
         res = response.content
-        Post.objects.filter(pk=1).delete()
+        response.context['page_obj'][0].delete()
         response2 = self.guest_client.get(reverse('posts:index'))
         res2 = response2.content
         self.assertEqual(res, res2)
@@ -122,17 +138,15 @@ class PostModelTest(TestCase):
         self.assertNotEqual(res, res3)
 
     def test_following(self):
-        self.assertFalse(
-            Follow.objects.filter(user=self.user.id,
-                                  author=self.user2.id
-                                  ).exists())
         self.authorized_client.get(reverse('posts:profile_follow', kwargs={
             'username':
-                self.user2.username}))
+                self.user3.username}))
         self.assertTrue(
             Follow.objects.filter(user=self.user.id,
-                                  author=self.user2.id
+                                  author=self.user3.id
                                   ).exists())
+
+    def test_unfollowing(self):
         self.authorized_client.get(reverse('posts:profile_unfollow', kwargs={
             'username':
                 self.user2.username}))
