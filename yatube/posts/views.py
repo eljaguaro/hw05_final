@@ -47,11 +47,8 @@ def profile(request, username):
     paginator = Paginator(posts, settings.TEN_SLICE)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    following = 0
-    if Follow.objects.filter(user=request.user.id, author=author).exists():
-        following = 1
-    if author == request.user:
-        sameuser = 1
+    following = Follow.objects.filter(user=request.user.id, author=author)
+    sameuser = author == request.user
     context = {
         'author': author,
         'postsnum': num_of_posts,
@@ -154,8 +151,8 @@ def follow_index(request):
     ''' информация о текущем пользователе доступна в request.user '''
     followslst = Follow.objects.select_related(
         'user', 'author').filter(user=request.user)
-    posts_list = Post.objects.filter(author__in=[i.author for i in followslst])
-    list(posts_list).sort(key=lambda x: x.pub_date, reverse=1)
+    authors = followslst.values_list('author', flat=True)
+    posts_list = Post.objects.filter(author__in=authors)
     paginator = Paginator(posts_list, settings.TEN_SLICE)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
